@@ -1,4 +1,7 @@
-defaults
+defaults 
+[![Test](https://github.com/sidai/defaults/actions/workflows/test.yml/badge.svg)](https://github.com/sidai/defaults/actions/workflows/test.yml)
+[![GitHub release](https://img.shields.io/github/release/sidai/defaults.svg)](https://github.com/sidai/defaults/releases)
+[![License](https://img.shields.io/github/license/sidai/defaults.svg)](./LICENSE)
 =======
 Set default values to structs using [struct tags](http://golang.org/pkg/reflect/#StructTag) or [struct type](https://pkg.go.dev/reflect#Type)
 
@@ -93,7 +96,3 @@ foo = {
     "ListOfIntMap": [{1: 10, 2: 20}, {3: 30, 4: 40}]
 }
 ```
-  
-License
-------
-MIT, see LICENSE
