@@ -1,12 +1,12 @@
 defaults [![Test](https://github.com/sidai/defaults/actions/workflows/test.yml/badge.svg)](https://github.com/sidai/defaults/actions/workflows/test.yml) [![GitHub release](https://img.shields.io/github/release/sidai/defaults.svg)](https://github.com/sidai/defaults/releases) [![License](https://img.shields.io/github/license/sidai/defaults.svg)](./LICENSE)
 =======
-Set default values to structs using [struct tags](http://golang.org/pkg/reflect/#StructTag) or [struct type](https://pkg.go.dev/reflect#Type) <br>
+Structures default value filling with support in almost all types of data using [struct tags](http://golang.org/pkg/reflect/#StructTag) or [struct type](https://pkg.go.dev/reflect#Type) <br>
 
 Notice
 -------
 This repo is inspired by [go-defaults](https://github.com/sidai/go-defaults) and applies the same [LICENSE](https://github.com/sidai/defaults/blob/master/LICENSE). 
 
-The aforementioned provides basic default value setting for simple data type. However, 
+The aforementioned repo provides basic default value setting for simple data type. However, 
 1. It does not support complex structure like `pointer`, `interface`, `map` or `slice of map`. 
 2. It always recursively fill the struct with default value but there is case struct filling should be skipped.
 3. The default filler provided is not exported which makes it hard for customization.  
@@ -163,3 +163,5 @@ Usage
         "DefaultDataWithValDive": {String: "", Int: 1} // <= FuncsByType ignores dive tag as it works on the extra type only
     }
     ```
+    
+- More Examples [*HERE*](https://github.com/sidai/defaults/blob/master/filler_test.go)
