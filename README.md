@@ -1,14 +1,14 @@
 defaults [![Test](https://github.com/sidai/defaults/actions/workflows/test.yml/badge.svg)](https://github.com/sidai/defaults/actions/workflows/test.yml) [![GitHub release](https://img.shields.io/github/release/sidai/defaults.svg)](https://github.com/sidai/defaults/releases) [![License](https://img.shields.io/github/license/sidai/defaults.svg)](./LICENSE)
 =======
-Structures default value filling with support in almost all types of data using [struct tags](http://golang.org/pkg/reflect/#StructTag) or [struct type](https://pkg.go.dev/reflect#Type) <br>
+Structures default value filling with support in almost all types of data using [struct tags](http://golang.org/pkg/reflect/#StructTag) or [struct type](https://pkg.go.dev/reflect#Type)
 
 Notice
 -------
 This repo is inspired by [go-defaults](https://github.com/sidai/go-defaults) and applies the same [LICENSE](https://github.com/sidai/defaults/blob/master/LICENSE). 
 
-The aforementioned repo provides basic default value setting for simple data type. However, 
+The aforementioned repo provides basic default value filling for simple data types. However, 
 1. It does not support complex structure like `pointer`, `interface`, `map` or `slice of map`. 
-2. It always recursively fill the struct with default value but there is case struct filling should be skipped.
+2. It always recursively fills the struct with default value but there are cases struct filling should be skipped.
 3. The default filler provided is not exported which makes it hard for customization.  
 
 I created this repo to provide more data types support, more flexibility in default value filling for struct and export the function for better customization. 
@@ -26,10 +26,10 @@ Supported Data Types
 - **Custom Types:**
     - `time.Duration`, `time.Time`
     - Aliased types. e.g `type UserName string`
-    - Self-defined type. e.g. `type User struct {Name string, Age int}`
+    - Self-defined types. e.g. `type User struct {Name string, Age int}`
     
 - **Complex Types:**
-    - `map`,`slice`, `struct`, `interface`
+    - `map`, `slice`, `interface`, `struct`
     
 - **Nested Types:**
     - e.g. `map[int][]*User`, `[]map[int]*User`, `map[int]map[int]*User` 
@@ -39,7 +39,7 @@ Supported Data Types
    
 Rules
 -------
-- Filling rules can be defined both by [Kind](https://pkg.go.dev/reflect#Kind) and [Type](https://pkg.go.dev/reflect#Type) <br>
+- Filling rules can be defined either by [Kind](https://pkg.go.dev/reflect#Kind) or [Type](https://pkg.go.dev/reflect#Type) <br>
   If both rules found when filling a field, 
   [FuncsByKind](https://github.com/sidai/defaults/blob/master/filler.go#L17) is used first before
   [FuncsByType](https://github.com/sidai/defaults/blob/master/filler.go#L18) 
@@ -47,7 +47,7 @@ Rules
 - Skip default filling for non-zero fields to prevent fields with initial value being reset
 
 - By default struct is recursively filled only when it is *empty* <br> 
-  Use `default:"omit"` to skip struct filling <br>
+  Use `default:"omit"` to always skip struct filling <br>
   Use `default:"dive"` to always apply struct filling even when it is not empty
 
 Usage
@@ -111,14 +111,14 @@ Usage
         "ListOfInt": [1, 2, 3, 4],
         "ListOfIntList": [[1, 2], [3, 4]],
         "ListOfIntMap": [{1: 10, 2: 20}, {3: 30, 4: 40}],
-        "Admin": {"Name": "", "Role": "admin"},
-        "AdminPtr": (*Admin) {"Name": "", "Role": "admin"},
-        "AdminOmit": {"Name": "", "Role": ""},
-        "AdminWithVal": {"Name": "admin1", "Role": ""},
-        "AdminWithValDive": {"Name": "admin2", "Role": "admin"},
-        "User": nil,
-        "UserWithVal": (*Admin) {"Name": "admin3", "Role": ""},
-        "UserWithValDive": (*Admin) {"Name": "admin4", "Role": "admin"}
+        "Admin": {"Name": "", "Role": "admin"},                         // Role filled with default value "admin" for emtpy field
+        "AdminPtr": (*Admin) {"Name": "", "Role": "admin"},             // Role filled with default value "admin" for emtpy pointer field
+        "AdminOmit": {"Name": "", "Role": ""},                          // Role not filled even when AdminOmit is emtpy since "omit" tag found
+        "AdminWithVal": {"Name": "admin1", "Role": ""},                 // Role not filled since AdminWithVal field is not empty
+        "AdminWithValDive": {"Name": "admin2", "Role": "admin"},        // Role filled even when AdminWithValDive field is not empty since "dive" tag found
+        "User": nil,                                                    // User not filled no implementation found
+        "UserWithVal": (*Admin) {"Name": "admin3", "Role": ""},         // User Role not filled since implementation UserWithVal is not empty 
+        "UserWithValDive": (*Admin) {"Name": "admin4", "Role": "admin"} // User Role filled since implementation UserWithValDive has "dive" tag
     }
     ```
   
@@ -127,14 +127,14 @@ Usage
     type Enum string
     
     type DefaultData struct {
-    	DefaultString string
-    	DefaultInt    int
+    	String string
+    	Int    int
     }
     
     type ExampleFuncsByType struct {
     	Enum                   Enum
-    	EnumWithTag            Enum `default:"tag"`
-    	EnumWithValueNTag      Enum `default:"tag"`
+    	EnumWithTag            Enum        `default:"tag"`
+    	EnumWithValueNTag      Enum        `default:"tag"`
     	DefaultData            DefaultData
     	DefaultDataOmit        DefaultData `default:"omit"`
     	DefaultDataWithVal     DefaultData
@@ -154,14 +154,14 @@ Usage
     ...
   
     foo = {
-        "Enum": "type",                                // <= Use FuncsByType
-        "EnumWithTag": "tag",                          // <= Use tag as FuncsByKind has higher precedence
-        "EnumWithValueNTag": "value",                  // <= No filling applied as value is not empty
-        "DefaultData": {String: "type", Int: 7},       
-        "DefaultDataOmit": {String: "", Int: 0},       // <= Omit tag works for FuncsByType
-        "DefaultDataWithVal": {String: "", Int: 1},    // <= FuncsByType skip filling when value is not empty
-        "DefaultDataWithValDive": {String: "", Int: 1} // <= FuncsByType ignores dive tag as it works on the extra type only
+        "Enum": "type",                                // Use FuncsByType
+        "EnumWithTag": "tag",                          // Use tag as FuncsByKind has higher precedence
+        "EnumWithValueNTag": "value",                  // No filling applied as value is not empty
+        "DefaultData": {String: "type", Int: 7},       // Use FuncsByType
+        "DefaultDataOmit": {String: "", Int: 0},       // Omit tag works for FuncsByType
+        "DefaultDataWithVal": {String: "", Int: 1},    // FuncsByType skip filling when value is not empty
+        "DefaultDataWithValDive": {String: "", Int: 1} // FuncsByType ignores dive tag as it works on the extra type only
     }
     ```
     
-- More Examples [*HERE*](https://github.com/sidai/defaults/blob/master/filler_test.go)
+- More Examples [*Here*](https://github.com/sidai/defaults/blob/master/filler_test.go)
