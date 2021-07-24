@@ -36,9 +36,10 @@ func (s *Struct) StringVal() string {
 
 type ExampleBasic struct {
 	BoolNoTag   bool
-	BoolInvalid bool  `default:"invalid"`
-	Bool        bool  `default:"true"`
-	BoolPtr     *bool `default:"true"`
+	BoolInvalid bool   `default:"invalid"`
+	Bool        bool   `default:"true"`
+	BoolPtr     *bool  `default:"true"`
+	BoolPtrPtr  **bool `default:"true"`
 
 	IntNoTag   int
 	IntInvalid int        `default:"invalid"`
@@ -95,20 +96,29 @@ type ExampleBasic struct {
 
 	Interface         Interface
 	InterfaceOmit     Interface `default:"omit"`
+	InterfaceDive     Interface `default:"dive"`
 	InterfaceList     []Interface
 	InterfaceListOmit []Interface `default:"omit"`
+	InterfaceListDive []Interface `default:"dive"`
 
 	Struct            Struct
 	StructOmit        Struct `default:"omit"`
+	StructDive        Struct `default:"dive"`
 	StructPtr         *Struct
+	StructPtrOmit     *Struct `default:"omit"`
+	StructPtrDive     *Struct `default:"dive"`
 	StructList        []Struct
 	StructListOmit    []Struct `default:"omit"`
+	StructListDive    []Struct `default:"dive"`
 	StructMap         map[int]Struct
 	StructMapOmit     map[int]Struct `default:"omit"`
+	StructMapDive     map[int]Struct `default:"dive"`
 	StructListMap     map[int][]Struct
 	StructListMapOmit map[int][]Struct `default:"omit"`
+	StructListMapDive map[int][]Struct `default:"dive"`
 	StructMapList     []map[int]Struct
 	StructMapListOmit []map[int]Struct `default:"omit"`
+	StructMapListDive []map[int]Struct `default:"dive"`
 }
 
 func (s *FillerSuite) TestSetDefaults(c *C) {
@@ -120,6 +130,7 @@ func (s *FillerSuite) TestSetDefaults(c *C) {
 	c.Assert(foo.BoolInvalid, Equals, false)
 	c.Assert(foo.Bool, Equals, true)
 	c.Assert(*foo.BoolPtr, Equals, true)
+	c.Assert(**foo.BoolPtrPtr, Equals, true)
 
 	c.Assert(foo.IntNoTag, Equals, 0)
 	c.Assert(foo.IntInvalid, Equals, 0)
@@ -177,21 +188,30 @@ func (s *FillerSuite) TestSetDefaults(c *C) {
 
 	c.Assert(foo.Interface, IsNil)
 	c.Assert(foo.InterfaceOmit, IsNil)
+	c.Assert(foo.InterfaceDive, IsNil)
 	c.Assert(foo.InterfaceList, IsNil)
+	c.Assert(foo.InterfaceListOmit, IsNil)
 	c.Assert(foo.InterfaceListOmit, IsNil)
 
 	defaultStruct := Struct{String: "string", Integer: 1}
 	c.Assert(foo.Struct, Equals, defaultStruct)
 	c.Assert(foo.StructOmit, Equals, Struct{})
+	c.Assert(foo.StructDive, Equals, defaultStruct)
 	c.Assert(*foo.StructPtr, Equals, defaultStruct)
+	c.Assert(foo.StructPtrOmit, IsNil)
+	c.Assert(*foo.StructPtrDive, Equals, defaultStruct)
 	c.Assert(foo.StructList, IsNil)
 	c.Assert(foo.StructListOmit, IsNil)
+	c.Assert(foo.StructListDive, IsNil)
 	c.Assert(foo.StructMap, IsNil)
 	c.Assert(foo.StructMapOmit, IsNil)
+	c.Assert(foo.StructMapDive, IsNil)
 	c.Assert(foo.StructListMap, IsNil)
 	c.Assert(foo.StructListMapOmit, IsNil)
+	c.Assert(foo.StructListMapDive, IsNil)
 	c.Assert(foo.StructMapList, IsNil)
 	c.Assert(foo.StructMapListOmit, IsNil)
+	c.Assert(foo.StructMapListDive, IsNil)
 }
 
 func (s *FillerSuite) TestSetDefaultsWithValue(c *C) {
@@ -212,21 +232,28 @@ func (s *FillerSuite) TestSetDefaultsWithValue(c *C) {
 		MapMapValue:       map[int]map[int]string{7: {7: "7"}},
 		Interface:         &Struct{Integer: 7},
 		InterfaceOmit:     &Struct{Integer: 7},
+		InterfaceDive:     &Struct{Integer: 7},
 		InterfaceList:     []Interface{&Struct{Integer: 7}},
 		InterfaceListOmit: []Interface{&Struct{Integer: 7}},
+		InterfaceListDive: []Interface{&Struct{Integer: 7}},
 		Struct:            Struct{Integer: 7},
 		StructOmit:        Struct{Integer: 7},
+		StructDive:        Struct{Integer: 7},
 		StructPtr:         &Struct{Integer: 7},
+		StructPtrOmit:     &Struct{Integer: 7},
+		StructPtrDive:     &Struct{Integer: 7},
 		StructList:        []Struct{{Integer: 7}},
 		StructListOmit:    []Struct{{Integer: 7}},
+		StructListDive:    []Struct{{Integer: 7}},
 		StructListMap:     map[int][]Struct{7: {{Integer: 7}}},
 		StructListMapOmit: map[int][]Struct{7: {{Integer: 7}}},
+		StructListMapDive: map[int][]Struct{7: {{Integer: 7}}},
 	}
 
 	SetDefaults(foo)
 
-	expectedStruct := Struct{String: "string", Integer: 7}
-	expectedOmitStruct := Struct{String: "", Integer: 7}
+	expectedStruct := Struct{String: "", Integer: 7}
+	expectedDiveStruct := Struct{String: "string", Integer: 7}
 
 	c.Assert(foo.Int, Equals, 7)
 	c.Assert(foo.Uint, Equals, uint(7))
@@ -242,20 +269,29 @@ func (s *FillerSuite) TestSetDefaultsWithValue(c *C) {
 	c.Assert(foo.MapListValue, DeepEquals, map[int][]string{7: {"7"}})
 	c.Assert(foo.MapMapValue, DeepEquals, map[int]map[int]string{7: {7: "7"}})
 	c.Assert(foo.Interface.IntegerVal(), Equals, 7)
-	c.Assert(foo.Interface.StringVal(), Equals, "string")
+	c.Assert(foo.Interface.StringVal(), Equals, "")
 	c.Assert(foo.InterfaceOmit.IntegerVal(), Equals, 7)
 	c.Assert(foo.InterfaceOmit.StringVal(), Equals, "")
+	c.Assert(foo.InterfaceDive.IntegerVal(), Equals, 7)
+	c.Assert(foo.InterfaceDive.StringVal(), Equals, "string")
 	c.Assert(foo.InterfaceList[0].IntegerVal(), Equals, 7)
-	c.Assert(foo.InterfaceList[0].StringVal(), Equals, "string")
+	c.Assert(foo.InterfaceList[0].StringVal(), Equals, "")
 	c.Assert(foo.InterfaceListOmit[0].IntegerVal(), Equals, 7)
 	c.Assert(foo.InterfaceListOmit[0].StringVal(), Equals, "")
+	c.Assert(foo.InterfaceListDive[0].IntegerVal(), Equals, 7)
+	c.Assert(foo.InterfaceListDive[0].StringVal(), Equals, "string")
 	c.Assert(foo.Struct, Equals, expectedStruct)
-	c.Assert(foo.StructOmit, Equals, expectedOmitStruct)
+	c.Assert(foo.StructOmit, Equals, expectedStruct)
+	c.Assert(foo.StructDive, Equals, expectedDiveStruct)
 	c.Assert(*foo.StructPtr, Equals, expectedStruct)
+	c.Assert(*foo.StructPtrOmit, Equals, expectedStruct)
+	c.Assert(*foo.StructPtrDive, Equals, expectedDiveStruct)
 	c.Assert(foo.StructList[0], Equals, expectedStruct)
-	c.Assert(foo.StructListOmit[0], Equals, expectedOmitStruct)
+	c.Assert(foo.StructListOmit[0], Equals, expectedStruct)
+	c.Assert(foo.StructListDive[0], Equals, expectedDiveStruct)
 	c.Assert(foo.StructListMap[7][0], Equals, expectedStruct)
-	c.Assert(foo.StructListMapOmit[7][0], Equals, expectedOmitStruct)
+	c.Assert(foo.StructListMapOmit[7][0], Equals, expectedStruct)
+	c.Assert(foo.StructListMapDive[7][0], Equals, expectedDiveStruct)
 }
 
 func (s *FillerSuite) TestGetValueInternalKind(c *C) {
@@ -328,4 +364,33 @@ func (s *FillerSuite) TestGetValueInternalKind(c *C) {
 	c.Assert(fn([1]Interface{nil}), Equals, reflect.Interface)
 	c.Assert(fn([1][1]Interface{{nil}}), Equals, reflect.Interface)
 	c.Assert(fn([1][]Interface{{nil}}), Equals, reflect.Interface)
+}
+
+type ExampleIndirectType struct {
+	Int          int
+	IntPtr       *int
+	IntPtrPtr    **int
+	Struct       Struct
+	StructPtr    *Struct
+	StructPtrPtr **Struct
+	IntList      []int
+	IntIntMap    map[int]int
+}
+
+func (s *FillerSuite) TestIndirectType(c *C) {
+	fn := func(field reflect.Value) reflect.Type {
+		return IndirectType(field)
+	}
+
+	foo := reflect.ValueOf(&ExampleIndirectType{}).Elem()
+
+	typeInt, typeStruct := reflect.TypeOf(0), reflect.TypeOf(Struct{})
+	c.Assert(fn(foo.Field(0)), Equals, typeInt)
+	c.Assert(fn(foo.Field(1)), Equals, typeInt)
+	c.Assert(fn(foo.Field(2)), Equals, typeInt)
+	c.Assert(fn(foo.Field(3)), Equals, typeStruct)
+	c.Assert(fn(foo.Field(4)), Equals, typeStruct)
+	c.Assert(fn(foo.Field(5)), Equals, typeStruct)
+	c.Assert(fn(foo.Field(6)), Equals, reflect.TypeOf([]int{}))
+	c.Assert(fn(foo.Field(7)), Equals, reflect.TypeOf(map[int]int{}))
 }

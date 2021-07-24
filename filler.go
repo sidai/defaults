@@ -6,7 +6,9 @@ import (
 
 const (
 	defaultTag = "default"
-	omitKey    = "omit"
+
+	diveKey = "dive"
+	omitKey = "omit"
 )
 
 type FillFn func(field *Field)
@@ -14,8 +16,9 @@ type FillFn func(field *Field)
 type filler struct {
 	FuncByKind map[reflect.Kind]FillFn
 	FuncByType map[reflect.Type]FillFn
-	OmitKey    string
 	DefaultTag string
+	DiveKey    string
+	OmitKey    string
 }
 
 type Field struct {
@@ -29,6 +32,7 @@ func newFiller(opts ...Option) *filler {
 		FuncByKind: make(map[reflect.Kind]FillFn),
 		FuncByType: make(map[reflect.Type]FillFn),
 		DefaultTag: defaultTag,
+		DiveKey:    diveKey,
 		OmitKey:    omitKey,
 	}
 
@@ -48,7 +52,7 @@ func (f *filler) SetDefaults(variable interface{}) {
 	}
 
 	f.fillStruct(&Field{
-		Value:  Indirect(value),
+		Value:  value.Elem(),
 		Tag:    "",
 		Parent: nil,
 	})
@@ -71,23 +75,34 @@ func (f *filler) fillStruct(field *Field) {
 }
 
 func (f *filler) fillField(field *Field) {
-	// Fill the field when field is empty in precedence of Kind (via Tag) > Type (via Type Default)
-	if fn, ok := f.FuncByKind[field.Value.Kind()]; ok && f.isFieldEmpty(field) {
+	// Fill the field when field should be filled in precedence of Kind (via Tag) > Type (via Type Default)
+	if fn, ok := f.FuncByKind[field.Value.Kind()]; ok && f.shouldFill(field) {
 		fn(field)
 	}
 
-	if fn, ok := f.FuncByType[Indirect(field.Value).Type()]; ok && f.isFieldEmpty(field) {
+	if fn, ok := f.FuncByType[field.Value.Type()]; ok && f.shouldFill(field) {
 		fn(field)
 	}
 }
 
-func (f *filler) isFieldEmpty(field *Field) bool {
+func (f *filler) shouldFill(field *Field) bool {
 	switch GetValueInternalKind(field.Value) {
-	case reflect.Struct, reflect.Interface:
-		// always assume the structs/interface is empty and can be filled
-		// the actually struct filling logic should take care of the rest
+	case reflect.Struct:
+		// always fill struct if dive key found
+		if field.Tag == f.DiveKey {
+			return true
+		}
+		// always skip struct filling if omit key found
+		if field.Tag == f.OmitKey {
+			return false
+		}
+		// otherwise only fill struct if all its field is of zero value
+		return field.Value.IsZero()
+	case reflect.Interface:
+		// always assume interface should be filled util we find the actual implementation
 		return true
 	default:
+		// only fill zero field for primitive type (or its alias)
 		return field.Value.IsZero()
 	}
 }
@@ -112,22 +127,18 @@ BEGIN:
 		typ = typ.Elem()
 		goto BEGIN
 	case reflect.Struct, reflect.Interface:
-		fallthrough
+		return typ.Kind()
 	default:
 		return typ.Kind()
 	}
 }
 
-// Indirect keeps de-referencing the value until a non-ptr value found
-func Indirect(field reflect.Value) reflect.Value {
-	if field.Kind() != reflect.Ptr {
-		return field
+// IndirectType keeps de-referencing the type of the value until a non-ptr type found then returns the type
+func IndirectType(field reflect.Value) reflect.Type {
+	typ := field.Type()
+	for typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
 	}
 
-	elem := field.Elem()
-	for elem.Kind() == reflect.Ptr {
-		elem = elem.Elem()
-	}
-
-	return elem
+	return typ
 }

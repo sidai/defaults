@@ -17,6 +17,12 @@ func UseDefaultTag(tag string) Option {
 	}
 }
 
+func UseDiveKey(key string) Option {
+	return func(f *filler) {
+		f.DiveKey = key
+	}
+}
+
 func UseOmitKey(key string) Option {
 	return func(f *filler) {
 		f.OmitKey = key
@@ -49,9 +55,9 @@ func UseTimeFormat(layout string) Option {
 
 func UseDefaultType(defVal interface{}) Option {
 	return func(f *filler) {
-		value := Indirect(reflect.ValueOf(defVal))
-		f.FuncByType[value.Type()] = func(field *Field) {
-			if field.Value.IsZero() && field.Tag != f.OmitKey {
+		value := reflect.Indirect(reflect.ValueOf(defVal))
+		f.FuncByType[IndirectType(value)] = func(field *Field) {
+			if field.Value.IsZero() {
 				reflect.Indirect(field.Value).Set(value)
 			}
 		}
@@ -101,10 +107,7 @@ func (f *filler) useDefaultKindFuncs() {
 	})
 
 	fns[reflect.Struct] = func(field *Field) {
-		// Skip set default value for struct if `omit` tag found
-		if field.Tag != f.OmitKey {
-			f.fillStruct(field)
-		}
+		f.fillStruct(field)
 	}
 
 	fns[reflect.Ptr] = func(field *Field) {

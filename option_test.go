@@ -30,25 +30,53 @@ func (s *OptionSuite) TestCustomDefaultTag(c *C) {
 	c.Assert(bar.CustomTag, Equals, "string")
 }
 
-type ExampleCustomKey struct {
+type ExampleCustomOmitKey struct {
 	StructOmit Struct `default:"omit"`
 	StructSkip Struct `default:"skip"`
 }
 
 func (s *OptionSuite) TestCustomOmitKey(c *C) {
-	var foo ExampleCustomKey
+	var foo ExampleCustomOmitKey
 
 	SetDefaults(&foo)
 
 	c.Assert(foo.StructOmit, Equals, Struct{})
 	c.Assert(foo.StructSkip, Equals, Struct{String: "string", Integer: 1})
 
-	var bar ExampleCustomKey
+	var bar ExampleCustomOmitKey
 
 	NewFiller(UseDefault(), UseOmitKey("skip")).SetDefaults(&bar)
 
 	c.Assert(bar.StructOmit, Equals, Struct{String: "string", Integer: 1})
 	c.Assert(bar.StructSkip, Equals, Struct{})
+}
+
+type ExampleCustomDiveKey struct {
+	StructDive Struct `default:"dive"`
+	StructDig  Struct `default:"dig"`
+}
+
+func (s *OptionSuite) TestCustomDiveKey(c *C) {
+	structWithVal := Struct{Integer: 7}
+	foo := ExampleCustomDiveKey{
+		StructDive: structWithVal,
+		StructDig:  structWithVal,
+	}
+
+	SetDefaults(&foo)
+
+	c.Assert(foo.StructDive, Equals, Struct{String: "string", Integer: 7})
+	c.Assert(foo.StructDig, Equals, Struct{Integer: 7})
+
+	bar := ExampleCustomDiveKey{
+		StructDive: structWithVal,
+		StructDig:  structWithVal,
+	}
+
+	NewFiller(UseDefault(), UseDiveKey("dig")).SetDefaults(&bar)
+
+	c.Assert(bar.StructDive, Equals, Struct{Integer: 7})
+	c.Assert(bar.StructDig, Equals, Struct{String: "string", Integer: 7})
 }
 
 type ExampleCustomLayout struct {
@@ -85,17 +113,20 @@ type ExampleDefaultType struct {
 	DefaultWithTag Default `default:"string"`
 	DefaultPtr     *Default
 
-	Struct          DefaultStruct
-	StructOmit      DefaultStruct `default:"omit"`
-	StructPtr       *DefaultStruct
-	StructWithValue DefaultStruct
-	StructList      []DefaultStruct
+	Struct              DefaultStruct
+	StructOmit          DefaultStruct `default:"omit"`
+	StructPtr           *DefaultStruct
+	StructWithValue     DefaultStruct
+	StructWithValueDive DefaultStruct `default:"dive"`
+	StructList          []DefaultStruct
 }
 
 func (s *OptionSuite) TestUseDefaultType(c *C) {
+	structWithVal := DefaultStruct{Integer: 1}
 	foo := ExampleDefaultType{
-		StructWithValue: DefaultStruct{Integer: 1},
-		StructList:      []DefaultStruct{{Integer: 1}},
+		StructWithValue:     structWithVal,
+		StructWithValueDive: structWithVal,
+		StructList:          []DefaultStruct{structWithVal},
 	}
 
 	NewFiller(UseDefault(), UseDefaultType(Default("7")), UseDefaultType(DefaultStruct{Integer: 7, String: "7"})).SetDefaults(&foo)
@@ -108,7 +139,9 @@ func (s *OptionSuite) TestUseDefaultType(c *C) {
 	c.Assert(foo.StructOmit, Equals, DefaultStruct{})
 	c.Assert(*foo.StructPtr, Equals, DefaultStruct{Integer: 7, String: "7"})
 
-	// default type only set on entire struct. default value not applies if any field already set
 	c.Assert(foo.StructWithValue, Equals, DefaultStruct{Integer: 1, String: ""})
+	// default type for structs apply on entirely struct only when the struct is of zero value
+	// it does not recursively set default for inner filed so dive tag does not make any difference
+	c.Assert(foo.StructWithValueDive, Equals, DefaultStruct{Integer: 1, String: ""})
 	c.Assert(foo.StructList[0], Equals, DefaultStruct{Integer: 1, String: ""})
 }
