@@ -31,20 +31,20 @@ func UseOmitKey(key string) Option {
 
 func ParseDuration() Option {
 	return func(f *filler) {
-		f.FuncByKind[reflect.Int64] = f.skipIfTagEmpty(func(field *Field) {
+		f.FuncsByKind[reflect.Int64] = f.skipIfTagEmpty(func(field *Field) {
 			if field.Value.Type() == reflect.TypeOf(time.Second) {
 				value, _ := time.ParseDuration(field.Tag)
 				field.Value.Set(reflect.ValueOf(value))
 				return
 			}
-			f.FuncByKind[reflect.Int](field)
+			f.FuncsByKind[reflect.Int](field)
 		})
 	}
 }
 
 func UseTimeFormat(layout string) Option {
 	return func(f *filler) {
-		f.FuncByType[reflect.TypeOf(time.Time{})] = f.skipIfTagEmpty(func(field *Field) {
+		f.FuncsByType[reflect.TypeOf(time.Time{})] = f.skipIfTagEmpty(func(field *Field) {
 			if field.Value.IsZero() {
 				value, _ := time.Parse(layout, field.Tag)
 				field.Value.Set(reflect.ValueOf(value))
@@ -56,7 +56,7 @@ func UseTimeFormat(layout string) Option {
 func UseDefaultType(defVal interface{}) Option {
 	return func(f *filler) {
 		value := reflect.Indirect(reflect.ValueOf(defVal))
-		f.FuncByType[IndirectType(value)] = func(field *Field) {
+		f.FuncsByType[IndirectType(value)] = func(field *Field) {
 			if field.Value.IsZero() {
 				reflect.Indirect(field.Value).Set(value)
 			}
@@ -71,7 +71,7 @@ func UseDefault() Option {
 }
 
 func (f *filler) useDefaultKindFuncs() {
-	fns := f.FuncByKind
+	fns := f.FuncsByKind
 
 	fns[reflect.Bool] = f.skipIfTagEmpty(func(field *Field) {
 		value, _ := strconv.ParseBool(field.Tag)

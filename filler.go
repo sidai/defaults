@@ -14,11 +14,11 @@ const (
 type FillFn func(field *Field)
 
 type filler struct {
-	FuncByKind map[reflect.Kind]FillFn
-	FuncByType map[reflect.Type]FillFn
-	DefaultTag string
-	DiveKey    string
-	OmitKey    string
+	FuncsByKind map[reflect.Kind]FillFn
+	FuncsByType map[reflect.Type]FillFn
+	DefaultTag  string
+	DiveKey     string
+	OmitKey     string
 }
 
 type Field struct {
@@ -29,11 +29,11 @@ type Field struct {
 
 func newFiller(opts ...Option) *filler {
 	f := &filler{
-		FuncByKind: make(map[reflect.Kind]FillFn),
-		FuncByType: make(map[reflect.Type]FillFn),
-		DefaultTag: defaultTag,
-		DiveKey:    diveKey,
-		OmitKey:    omitKey,
+		FuncsByKind: make(map[reflect.Kind]FillFn),
+		FuncsByType: make(map[reflect.Type]FillFn),
+		DefaultTag:  defaultTag,
+		DiveKey:     diveKey,
+		OmitKey:     omitKey,
 	}
 
 	for _, opt := range opts {
@@ -76,11 +76,11 @@ func (f *filler) fillStruct(field *Field) {
 
 func (f *filler) fillField(field *Field) {
 	// Fill the field when field should be filled in precedence of Kind (via Tag) > Type (via Type Default)
-	if fn, ok := f.FuncByKind[field.Value.Kind()]; ok && f.shouldFill(field) {
+	if fn, ok := f.FuncsByKind[field.Value.Kind()]; ok && f.shouldFill(field) {
 		fn(field)
 	}
 
-	if fn, ok := f.FuncByType[field.Value.Type()]; ok && f.shouldFill(field) {
+	if fn, ok := f.FuncsByType[field.Value.Type()]; ok && f.shouldFill(field) {
 		fn(field)
 	}
 }
